@@ -2138,7 +2138,7 @@ new_arena(OMState *state)
         /* Double the number of arena objects on each allocation.
          * Note that it's possible for `numarenas` to overflow.
          */
-        numarenas = maxarenas ? maxarenas << 1 : INITIAL_ARENA_OBJECTS;
+        numarenas = maxarenas ? 2 * maxarenas : INITIAL_ARENA_OBJECTS;
         if (numarenas <= maxarenas)
             return NULL;                /* overflow */
 #if SIZEOF_SIZE_T <= SIZEOF_INT
@@ -2468,7 +2468,7 @@ allocate_from_new_pool(OMState *state, uint size)
     pool->szidx = size;
     size = INDEX2SIZE(size);
     bp = (pymem_block *)pool + POOL_OVERHEAD;
-    pool->nextoffset = POOL_OVERHEAD + (size << 1);
+    pool->nextoffset = POOL_OVERHEAD + 2 * size;
     pool->maxnextoffset = POOL_SIZE - size;
     pool->freeblock = bp + size;
     *(pymem_block **)(pool->freeblock) = NULL;
@@ -2502,7 +2502,7 @@ pymalloc_alloc(OMState *state, void *Py_UNUSED(ctx), size_t nbytes)
         return NULL;
     }
 
-    uint size = (uint)(nbytes - 1) >> ALIGNMENT_SHIFT;
+    uint size = (uint)(nbytes - 1) / ALIGNMENT;
     poolp pool = usedpools[size + size];
     pymem_block *bp;
 
@@ -3688,11 +3688,11 @@ pymalloc_print_stats(FILE *out)
     OMState *state = get_state();
 
     uint i;
-    const uint numclasses = SMALL_REQUEST_THRESHOLD >> ALIGNMENT_SHIFT;
+    const uint numclasses = SMALL_REQUEST_THRESHOLD / ALIGNMENT;
     /* # of pools, allocated blocks, and free blocks per class index */
-    size_t numpools[SMALL_REQUEST_THRESHOLD >> ALIGNMENT_SHIFT];
-    size_t numblocks[SMALL_REQUEST_THRESHOLD >> ALIGNMENT_SHIFT];
-    size_t numfreeblocks[SMALL_REQUEST_THRESHOLD >> ALIGNMENT_SHIFT];
+    size_t numpools[numclasses];
+    size_t numblocks[numclasses];
+    size_t numfreeblocks[numclasses];
     /* total # of allocated bytes in used and full pools */
     size_t allocated_bytes = 0;
     /* total # of available bytes in used pools */

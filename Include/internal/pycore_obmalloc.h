@@ -130,14 +130,12 @@ typedef unsigned int pymem_uint;  /* assuming >= 16 bits */
 
 #if SIZEOF_VOID_P > 4
 #define ALIGNMENT              16               /* must be 2^N */
-#define ALIGNMENT_SHIFT         4
 #else
 #define ALIGNMENT               8               /* must be 2^N */
-#define ALIGNMENT_SHIFT         3
 #endif
 
 /* Return the number of bytes in size class I, as a uint. */
-#define INDEX2SIZE(I) (((pymem_uint)(I) + 1) << ALIGNMENT_SHIFT)
+#define INDEX2SIZE(I) (((pymem_uint)(I) + 1) * ALIGNMENT)
 
 /*
  * Max size threshold below which malloc requests are considered to be
@@ -328,7 +326,7 @@ struct arena_object {
 This is involved.  For an index i, usedpools[i+i] is the header for a list of
 all partially used pools holding small blocks with "size class idx" i. So
 usedpools[0] corresponds to blocks of size 8, usedpools[2] to blocks of size
-16, and so on:  index 2*i <-> blocks of size (i+1)<<ALIGNMENT_SHIFT.
+16, and so on:  index 2*i <-> blocks of size (i+1) * ALIGNMENT.
 
 Pools are carved off an arena's highwater mark (an arena_object's pool_address
 member) as needed.  Once carved off, a pool is in one of three states forever
